@@ -9,7 +9,7 @@ import networkx as nx
 
 sys.path.append('../src')
 import Parameters
-from Subdue import ReadGraph, Subdue, nx_subdue
+from Subdue import read_graph, Subdue, nx_subdue
 
 subdue_example_path = 'inputgraph.json'
 tolerance_pct = 0.1  # mainly due to non-deterministic nature of the algorithm
@@ -48,7 +48,7 @@ def main_with_path(file_path):
     """
     parameters = Parameters.Parameters()
     # parameters.set_parameters(sys.argv)
-    graph = ReadGraph(file_path)
+    graph = read_graph(file_path)
     # outputFileName = parameters.outputFileName + ".dot"
     # graph.write_to_dot(outputFileName)
     parameters.set_defaults_for_graph(graph)
@@ -64,6 +64,8 @@ def unify_output_text(text):
     return text
 
 
+main_with_path(subdue_example_path)
+'''
 # normal run
 capture_prints = io.StringIO()
 with contextlib.redirect_stdout(capture_prints):
@@ -92,3 +94,4 @@ assert (
     /
     len(prints_main.split('\n'))
 ) < tolerance_pct
+'''

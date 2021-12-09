@@ -83,16 +83,15 @@ class Graph:
                         v.timestamp = int(v_dict['timestamp'])
                     if ('attrs' in v_dict):
                         json_attrs = v_dict['attrs']
-                        for attr, v in json_attrs.items():
-                            v.add_attr(attr, v)
+                        for attr, val in json_attrs.items():
+                            v.add_attr(attr, val)
                     self.vs[v_id] = v
             if ('edge' in json_object):
                 e_dict = json_object['edge']
-                print(e_dict)
+                print(e_dict.keys())
                 e_id, s_id, t_id = e_dict['id'], e_dict['source'], e_dict['target']
                 s_v, t_v = self.vs[s_id], self.vs[t_id]
                 directed = False
-
                 if (e_dict['directed'] == 'true'):
                     directed = True
                 e = Edge(e_id, s_v, t_v, directed)
@@ -123,14 +122,14 @@ class Graph:
                     'attrs': dict2attrs(nx_g.nodes[n_id], n_attrs).copy(),
                 }
             })
-        for (u, v) in nx_g.es():
+        for (u, v) in nx_g.edges():
             subdue_format.append({
                 'edge': {
                     'id': f'{u}-{v}',
                     'src': u,
                     'tgt': v,
                     'directed': directed,
-                    'attrs': dict2attrs(nx_g.es[(u, v)], e_attrs).copy(),
+                    'attrs': dict2attrs(nx_g.edges[(u, v)], e_attrs).copy(),
                 }
             })
 

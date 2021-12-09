@@ -13,7 +13,7 @@ class Parameters:
         self.in_fp = ""       # Store name of input file
         self.out_fn = ""      # Same as in_fp, but with .json removed from end if present
         self.k_beam = 4            # Number of patterns to retain after each expansion of previous patterns; based on value.
-        self.n_iters = 1           # Iterations of Subdue's discovery process. If more than 1, Subdue compresses graph with best pattern before next run. If 0, then run until no more compression (i.e., set to |E|).
+        self.n_iters = 2           # Iterations of Subdue's discovery process. If more than 1, Subdue compresses graph with best pattern before next run. If 0, then run until no more compression (i.e., set to |E|).
         self.limit = 100 # Number of patterns considered; default (0) is |E|/2.
         self.max_size = 0              # Maximum size (#edges) of a pattern; default (0) is |E|/2.
         self.min_size = 1              # Minimum size (#edges) of a pattern; default is 1.
