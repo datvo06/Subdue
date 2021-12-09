@@ -8,32 +8,32 @@ from OrderedSet import OrderedSet # specialized Subdue version
 import Graph
 
 class Pattern:
-    
+
     def __init__(self):
         self.definition = None # Graph
-        self.instances = []
+        self.insts = []
         self.value = 0.0
-    
+
     def evaluate (self, graph):
         """Compute value of using given pattern to compress given graph, where 0 means no compression, and 1 means perfect compression."""
         # (instances-1) because we would also need to retain the definition of the pattern for compression
-        self.value = float(((len(self.instances) - 1) * len(self.definition.edges)) / float(len(graph.edges))) 
-    
+        self.value = float(((len(self.insts) - 1) * len(self.definition.es)) / float(len(graph.es)))
+
     def print_pattern(self, tab):
-        print(tab + "Pattern (value=" + str(self.value) + ", instances=" + str(len(self.instances)) + "):")
+        print(tab + "Pattern (value=" + str(self.value) + ", instances=" + str(len(self.insts)) + "):")
         self.definition.print_graph(tab+'  ')
         # May want to make instance printing optional
         instanceNum = 1
-        for instance in self.instances:
+        for instance in self.insts:
             instance.print_instance(instanceNum, tab+'  ')
             instanceNum += 1
-    
-    def write_instances_to_file(self, outputFileName):
+
+    def write_instances_to_file(self, out_fn):
         """Write instances of pattern to given file name in JSON format."""
-        outputFile = open(outputFileName, 'w')
+        outputFile = open(out_fn, 'w')
         outputFile.write('[\n')
         firstOne = True
-        for instance in self.instances:
+        for instance in self.insts:
             if firstOne:
                 firstOne = False
             else:
@@ -43,22 +43,22 @@ class Pattern:
         outputFile.close()
 
 class Instance:
-    
+
     def __init__(self):
-        self.vertices = OrderedSet()
-        self.edges = OrderedSet()
-    
+        self.vs = OrderedSet()
+        self.es = OrderedSet()
+
     def print_instance (self, instanceNum, tab=""):
         print(tab + "Instance " + str(instanceNum) + ":")
-        for vertex in self.vertices:
+        for vertex in self.vs:
             vertex.print_vertex(tab+'  ')
-        for edge in self.edges:
+        for edge in self.es:
             edge.print_edge(tab+'  ')
-            
+
     def write_to_file(self, outputFile):
         """Write instance to given file stream in JSON format."""
         firstOne = True
-        for vertex in self.vertices:
+        for vertex in self.vs:
             if firstOne:
                 firstOne = False
             else:
@@ -66,71 +66,77 @@ class Instance:
             vertex.write_to_file(outputFile)
         outputFile.write(',\n')
         firstOne = True
-        for edge in self.edges:
+        for edge in self.es:
             if firstOne:
                 firstOne = False
             else:
                 outputFile.write(',\n')
             edge.write_to_file(outputFile)
-    
+
     def max_timestamp(self):
         """Returns the maximum timestamp over all vertices and edges in the instance."""
-        maxTimeStampVertex = max(self.vertices, key = lambda v: v.timestamp)
-        maxTimeStampEdge = max(self.edges, key = lambda e: e.timestamp)
+        maxTimeStampVertex = max(self.vs, key = lambda v: v.timestamp)
+        maxTimeStampEdge = max(self.es, key = lambda e: e.timestamp)
         return max(maxTimeStampVertex.timestamp, maxTimeStampEdge.timestamp)
-        
+
 
 # ----- Pattern and Instance Creation
 
-def CreateInstanceFromEdge(edge):
+def edge2inst(edge):
     i = Instance()
-    i.edges.add(edge)
-    i.vertices.add(edge.source)
-    i.vertices.add(edge.target)
+    i.es.add(edge)
+    i.vs.add(edge.src)
+    i.vs.add(edge.tgt)
     return i
 
-def CreatePatternFromInstances(definition, instances):
+def inst2ptrn(definition, instances):
     """Create pattern from given definition graph and its instances. Note: Pattern not evaluated here."""
     pattern = Pattern()
     pattern.definition = definition
-    pattern.instances = instances
+    pattern.insts = instances
     return pattern
 
 # ----- Pattern Extension
 
-def ExtendPattern (parameters, pattern):
-    """Return list of patterns created by extending each instance of the given pattern by one edge in all possible ways,
-       and then collecting matching extended instances together into new patterns."""
-    extendedInstances = []
-    for instance in pattern.instances:
-        newInstances = ExtendInstance(instance)
-        for newInstance in newInstances:
-            InsertNewInstance(extendedInstances, newInstance)
-    newPatterns = []
-    while extendedInstances:
-        newInstance = extendedInstances.pop(0)
-        newInstanceGraph = Graph.CreateGraphFromInstance(newInstance)
+def extend_ptrn (parameters, pattern):
+    """Return list of patterns created by extending each instance of the given
+       pattern by one edge in all possible ways, and then collecting matching
+       extended instances together into new patterns."""
+    # TODO: Extend pattern - all edge labels
+    e_insts = []
+    # For each instance of this pattern
+    for inst in pattern.insts:
+        # Extend it according to new instance
+        n_insts = ExtendInstance(inst)
+        for n_inst in n_insts:
+            insert_new_instance(e_insts, n_inst)
+    n_ptrns = []
+    while e_insts:      # While len > 0
+        n_inst = e_insts.pop(0)
+        n_ig = Graph.inst2g(n_inst)
         if parameters.temporal:
-            newInstanceGraph.TemporalOrder()
-        matchingInstances = [newInstance]
-        nonmatchingInstances = []
-        for extendedInstance in extendedInstances:
-            extendedInstanceGraph = Graph.CreateGraphFromInstance(extendedInstance)
+            n_ig.TemporalOrder()
+        m_insts = [n_inst]          # Matching instances
+        nm_insts = []
+        for e_inst in e_insts:
+            e_ig = Graph.inst2g(e_inst)
             if parameters.temporal:
-                extendedInstanceGraph.TemporalOrder()
-            if Graph.GraphMatch(newInstanceGraph,extendedInstanceGraph) and (not InstancesOverlap(parameters.overlap, matchingInstances, extendedInstance)):
-                matchingInstances.append(extendedInstance)
+                e_ig.TemporalOrder()
+            # Graph match
+            if Graph.match_g(n_ig, e_ig) and\
+                    (not InstancesOverlap(parameters.overlap, m_insts, e_inst)):
+                m_insts.append(e_inst)
             else:
-                nonmatchingInstances.append(extendedInstance)
-        extendedInstances = nonmatchingInstances
-        newPattern = CreatePatternFromInstances(newInstanceGraph, matchingInstances)
-        newPatterns.append(newPattern)
-    return newPatterns
+                nm_insts.append(e_inst)
+        e_insts = nm_insts
+        n_ptrn = inst2ptrn(n_ig, m_insts)
+        n_ptrns.append(n_ptrn)
+    return n_ptrns
 
 def ExtendInstance (instance):
     """Returns list of new instances created by extending the given instance by one new edge in all possible ways."""
     newInstances = []
-    unusedEdges = OrderedSet([e for v in instance.vertices for e in v.edges]) - instance.edges
+    unusedEdges = OrderedSet([e for v in instance.vs for e in v.es]) - instance.es
     for edge in unusedEdges:
         newInstance = ExtendInstanceByEdge(instance, edge)
         newInstances.append(newInstance)
@@ -139,29 +145,23 @@ def ExtendInstance (instance):
 def ExtendInstanceByEdge(instance, edge):
     """Create and return new instance built from given instance and adding given edge and vertices of edge if new."""
     newInstance = Instance()
-    newInstance.vertices = OrderedSet(instance.vertices)
-    newInstance.edges = OrderedSet(instance.edges)
-    newInstance.edges.add(edge)
-    newInstance.vertices.add(edge.source)
-    newInstance.vertices.add(edge.target)
+    newInstance.vs = OrderedSet(instance.vs)
+    newInstance.es = OrderedSet(instance.es)
+    newInstance.es.add(edge)
+    newInstance.vs.add(edge.src)
+    newInstance.vs.add(edge.tgt)
     return newInstance
 
-def InsertNewInstance(instanceList, newInstance):
+def insert_new_instance(insts, n_inst):
     """Add newInstance to instanceList if it does not match an instance already on the list."""
-    match = False
-    for instance in instanceList:
-        if (InstanceMatch(instance,newInstance)):
-            match = True
-            break
+    # python: any does short circuit
+    match = any(match_i(inst, n_inst) for inst in insts)
     if not match:
-        instanceList.append(newInstance)
+        insts.append(n_inst)
 
-def InstanceMatch(instance1,instance2):
+def match_i(instance1,instance2):
     """Return True if given instances match, i.e., contain the same vertex and edge object instances."""
-    if (instance1.vertices == instance2.vertices) and (instance1.edges == instance2.edges):
-        return True
-    else:
-        return False
+    return (instance1.vs == instance2.vs) and (instance1.es == instance2.es)
 
 def InstancesOverlap(overlap, instanceList, instance):
     """Returns True if instance overlaps with an instance in the given instanceList
@@ -178,23 +178,23 @@ def InstanceOverlap(overlap, instance1, instance2):
     """Returns True if given instances overlap according to given overlap parameter.
     See InstancesOverlap for explanation."""
     if overlap == "edge":
-        return InstanceMatch(instance1, instance2)
+        return match_i(instance1, instance2)
     elif overlap == "vertex":
-        return instance1.edges.intersect(instance2.edges)
+        return instance1.es.intersect(instance2.es)
     else: # overlap == "none"
-        return instance1.vertices.intersect(instance2.vertices)
+        return instance1.vs.intersect(instance2.vs)
 
 
 # ----- Pattern List Operations
 
-def PatternListInsert(newPattern, patternList, maxLength, valueBased):
+def insert_ptrn(newPattern, patternList, maxLength, valueBased):
     """Insert newPattern into patternList. If newPattern is isomorphic to an existing pattern on patternList, then keep higher-valued
        pattern. The list is kept in decreasing order by pattern value. If valueBased=True, then maxLength represents the maximum number
        of different-valued patterns on the list; otherwise, maxLength represents the maximum number of patterns on the list.
        Assumes given patternList already conforms to maximums."""
     # Check if newPattern unique (i.e., non-isomorphic or isomorphic but better-valued)
     for pattern in patternList:
-        if (Graph.GraphMatch(pattern.definition,newPattern.definition)):
+        if (Graph.match_g(pattern.definition ,newPattern.definition)):
             if (pattern.value >= newPattern.value):
                 return # newPattern already on list with same or better value
             else:

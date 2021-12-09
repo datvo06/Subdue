@@ -10,52 +10,52 @@ class Parameters:
 
     def __init__(self):
         # User-defined parameters
-        self.inputFileName = ""       # Store name of input file
-        self.outputFileName = ""      # Same as inputFileName, but with .json removed from end if present
-        self.beamWidth = 4            # Number of patterns to retain after each expansion of previous patterns; based on value.
-        self.iterations = 1           # Iterations of Subdue's discovery process. If more than 1, Subdue compresses graph with best pattern before next run. If 0, then run until no more compression (i.e., set to |E|).
-        self.limit = 0                # Number of patterns considered; default (0) is |E|/2.
-        self.maxSize = 0              # Maximum size (#edges) of a pattern; default (0) is |E|/2.
-        self.minSize = 1              # Minimum size (#edges) of a pattern; default is 1.
-        self.numBest = 3              # Number of best patterns to report at end; default is 3.
+        self.in_fp = ""       # Store name of input file
+        self.out_fn = ""      # Same as in_fp, but with .json removed from end if present
+        self.k_beam = 4            # Number of patterns to retain after each expansion of previous patterns; based on value.
+        self.n_iters = 1           # Iterations of Subdue's discovery process. If more than 1, Subdue compresses graph with best pattern before next run. If 0, then run until no more compression (i.e., set to |E|).
+        self.limit = 100 # Number of patterns considered; default (0) is |E|/2.
+        self.max_size = 0              # Maximum size (#edges) of a pattern; default (0) is |E|/2.
+        self.min_size = 1              # Minimum size (#edges) of a pattern; default is 1.
+        self.n_best = 3              # Number of best patterns to report at end; default is 3.
         self.overlap = "none"         # Extent that pattern instances can overlap (none, vertex, edge)
         self.prune = False            # Remove any patterns that are worse than their parent.
         self.valueBased = False       # Retain all patterns with the top beam best values.
-        self.writeCompressed = False  # Write compressed graph after iteration i to file outputFileName-compressed-i.json
-        self.writePattern = False     # Write best pattern at iteration i to file outputFileName-pattern-i.json
-        self.writeInstances = False   # Write instances of best pattern at iteration i as one graph to file outputFileName-instances-i.json
+        self.writeCompressed = False  # Write compressed graph after iteration i to file out_fn-compressed-i.json
+        self.writePattern = False     # Write best pattern at iteration i to file out_fn-pattern-i.json
+        self.writeInstances = False   # Write instances of best pattern at iteration i as one graph to file out_fn-instances-i.json
         self.temporal = False         # Discover static (False) or temporal (True) patterns
-    
-    def set_parameters (self, args):
+
+    def set_params (self, args):
         """Set parameters according to given command-line args list."""
-        self.inputFileName = args[-1]
-        filename, file_extension = os.path.splitext(self.inputFileName)
-        if (file_extension == '.json'):
-            self.outputFileName = filename
+        self.in_fp = args[-1]
+        fn, ext = os.path.splitext(self.in_fp)
+        if (ext == '.json'):
+            self.out_fn = fn
         else:
-            self.outputFileName = self.inputFileName
+            self.out_fn = self.in_fp
         index = 1
         numArgs = len(args)
         while index < (numArgs - 1):
             optionName = args[index]
             if optionName == "--beam":
                 index += 1
-                self.beamWidth = int(args[index])
+                self.k_beam = int(args[index])
             if optionName == "--iterations":
                 index += 1
-                self.iterations = int(args[index])
+                self.n_iters = int(args[index])
             if optionName == "--limit":
                 index += 1
                 self.limit = int(args[index])
             if optionName == "--maxsize":
                 index += 1
-                self.maxSize = int(args[index])
+                self.max_size = int(args[index])
             if optionName == "--minsize":
                 index += 1
-                self.minSize = int(args[index])
+                self.min_size = int(args[index])
             if optionName == "--numbest":
                 index += 1
-                self.numBest = int(args[index])
+                self.n_best = int(args[index])
             if optionName == "--overlap":
                 index += 1
                 overlap_type = args[index]
@@ -74,17 +74,17 @@ class Parameters:
             if optionName == "--temporal":
                 self.temporal = True
             index += 1
-    
+
     def print(self):
         print("Parameters:")
-        print("  Input File Name: " + self.inputFileName)
-        print("  Output File Name: " + self.outputFileName)
-        print("  Beam Width: " + str(self.beamWidth))
-        print("  Iterations: " + str(self.iterations))
+        print("  Input File Name: " + self.in_fp)
+        print("  Output File Name: " + self.out_fn)
+        print("  Beam Width: " + str(self.k_beam))
+        print("  Iterations: " + str(self.n_iters))
         print("  Limit: " + str(self.limit))
-        print("  Max Size: " + str(self.maxSize))
-        print("  Min Size: " + str(self.minSize))
-        print("  Num Best: " + str(self.numBest))
+        print("  Max Size: " + str(self.max_size))
+        print("  Min Size: " + str(self.min_size))
+        print("  Num Best: " + str(self.n_best))
         print("  Overlap: " + self.overlap)
         print("  Prune: " + str(self.prune))
         print("  Value Based: " + str(self.valueBased))
@@ -92,14 +92,14 @@ class Parameters:
         print("  Write Pattern: " + str(self.writePattern))
         print("  Write Instances: " + str(self.writeInstances))
         print("  Temporal: " + str(self.temporal) + "\n")
-        
+
     def set_defaults_for_graph(self, graph):
         if (self.limit == 0):
-            self.limit = int(len(graph.edges) / 2)
-        if (self.maxSize == 0):
-            self.maxSize = int(len(graph.edges) / 2)
-        if (self.iterations == 0):
-            self.iterations = len(graph.edges)
+            self.limit = int(len(graph.es) / 2)
+        if (self.max_size == 0):
+            self.max_size = int(len(graph.es) / 2)
+        if (self.n_iters == 0):
+            self.n_iters = len(graph.es)
 
-    def set_parameters_from_kwargs(self, **kwargs):
+    def set_params_from_kwargs(self, **kwargs):
         self.__dict__.update(kwargs)
