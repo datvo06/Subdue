@@ -6,6 +6,7 @@
 
 from OrderedSet import OrderedSet # specialized Subdue version
 import Graph
+import json
 
 class Pattern:
 
@@ -55,23 +56,14 @@ class Instance:
         for edge in self.es:
             edge.print_edge(tab+'  ')
 
-    def write_to_file(self, outputFile):
+    def write_to_file(self, out_f):
         """Write instance to given file stream in JSON format."""
-        firstOne = True
-        for vertex in self.vs:
-            if firstOne:
-                firstOne = False
-            else:
-                outputFile.write(',\n')
-            vertex.write_to_file(outputFile)
-        outputFile.write(',\n')
-        firstOne = True
-        for edge in self.es:
-            if firstOne:
-                firstOne = False
-            else:
-                outputFile.write(',\n')
-            edge.write_to_file(outputFile)
+        out_obj = []
+        for v in self.vs:
+            out_obj.append(v.get_dict())
+        for e in self.es:
+            out_obj.append(e.get_dict())
+        out_f.write(json.dumps(out_obj, indent=2))
 
     def max_timestamp(self):
         """Returns the maximum timestamp over all vertices and edges in the instance."""
